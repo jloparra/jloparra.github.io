@@ -1,0 +1,5 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {createDemoState} from '../src/demo-data.mjs'; import {can,canChangePermission,gymUsers,permittedContext} from '../src/permissions.mjs';
+test('only the athlete changes own permission',()=>{assert.equal(canChangePermission({profile:'athlete',actorId:'lucia',athleteId:'lucia'}),true);assert.equal(canChangePermission({profile:'trainer',actorId:'diego',athleteId:'lucia'}),false);assert.equal(canChangePermission({profile:'manager',actorId:'ana',athleteId:'lucia'}),false)});
+test('athlete cannot access cockpit and manager cannot decide',()=>{assert.equal(can({profile:'athlete',action:'view_cockpit'}),false);assert.equal(can({profile:'manager',action:'decide_proposal'}),false)});
+test('gym contexts are separated',()=>{const s=createDemoState();assert.ok(gymUsers(s,'gym-a').every(u=>u.gymId==='gym-a'));assert.equal(permittedContext(s,{profile:'trainer',gymId:'gym-a',athleteId:'iker'}),null)});
+test('no permission returns no context',()=>{const s=createDemoState();assert.equal(permittedContext(s,{profile:'trainer',gymId:'gym-a',athleteId:'sara'}),null)});
