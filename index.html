@@ -3,51 +3,117 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Demo funcional del MVP de TrackIU para validación con coaches.">
+  <meta name="description" content="Demostración funcional del MVP de decisión asistida de TrackIU para validación con coaches.">
   <meta name="theme-color" content="#101513">
-  <title>TrackIU · MVP funcional</title>
+  <title>TrackIU · Demostración de decisión asistida</title>
   <link rel="preconnect" href="https://api.fontshare.com">
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <script defer src="./app.js"></script>
+  <script defer type="module" src="./src/app.mjs"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Saltar al contenido</a>
-  <div id="app" class="app-shell">
-    <aside class="sidebar" aria-label="Navegación principal">
-      <a class="brand" href="#inicio" aria-label="TrackIU, inicio">
+
+  <!-- Web pública -->
+  <header class="public-hero" id="inicio">
+    <div class="public-hero-main">
+      <p class="eyebrow">Validación con gimnasios en España</p>
+      <h1>TrackIU: menos memoria, más contexto antes de la clase.</h1>
+      <p>
+        Esta demostración cruza el entrenamiento del día con el contexto mínimo del atleta,
+        propone cambios explicables y mantiene la decisión final en manos del coach.
+      </p>
+      <div class="inline">
+        <button class="button" type="button" data-action="open-demo" data-profile="trainer">Ver una clase de demostración</button>
+        <a class="button secondary" href="mailto:[PENDIENTE DE COMPLETAR POR TRACKIU]">Solicitar acceso al piloto</a>
+      </div>
+      <p class="muted small">
+        Entorno de demostración con datos ficticios. No introduzcas información personal ni de salud.
+      </p>
+    </div>
+    <aside class="public-hero-side">
+      <div class="loop">
+        <div class="loop-step"><span class="loop-number">1</span><span>Clase de hoy y entrenamiento estructurado</span></div>
+        <div class="loop-step"><span class="loop-number">2</span><span>Filtro determinista con motivos visibles</span></div>
+        <div class="loop-step"><span class="loop-number">3</span><span>Coach decide; atleta responde</span></div>
+      </div>
+      <section class="public-meta">
+        <h2>Qué estamos validando</h2>
+        <ul class="bullet-list">
+          <li>Si un coach entiende la propuesta sin aprender una herramienta compleja.</li>
+          <li>Si confía más en una recomendación cuando ve el motivo.</li>
+          <li>Si el atleta comprende la sesión final y aporta feedback útil.</li>
+        </ul>
+      </section>
+    </aside>
+  </header>
+
+  <section class="public-section" aria-label="Resumen del ciclo">
+    <div class="public-grid">
+      <article>
+        <h2>Para quién es</h2>
+        <p>Boxes y gimnasios que trabajan con clases dirigidas y entrenamientos diarios, no con programas médicos.</p>
+      </article>
+      <article>
+        <h2>Problema diario</h2>
+        <p>El entrenador tiene que recordar restricciones, adaptaciones y feedback mientras gestiona una clase completa.</p>
+      </article>
+      <article>
+        <h2>Qué decide TrackIU</h2>
+        <p>Qué ejercicios conviene mantener, sustituir o ajustar en función del contexto declarado, sin aumentar carga automáticamente.</p>
+      </article>
+      <article>
+        <h2>Qué sigue decidiendo el coach</h2>
+        <p>Aceptar, modificar, descartar o escalar cada propuesta antes de que el atleta vea la sesión final.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="public-section" aria-label="Acceso a demostración">
+    <h2>Acceso a la demostración</h2>
+    <p>En esta demo puedes entrar como cuatro perfiles ficticios. No son cuentas reales; sirven para observar el ciclo.</p>
+    <div class="demo-profiles">
+      <button class="button ghost" type="button" data-action="open-demo" data-profile="trainer">Entrenador · Diego</button>
+      <button class="button ghost" type="button" data-action="open-demo" data-profile="athlete">Atleta · Lucía</button>
+      <button class="button ghost" type="button" data-action="open-demo" data-profile="manager">Manager · Ana</button>
+      <button class="button ghost" type="button" data-action="open-demo" data-profile="super_admin">Superadministrador · Jose</button>
+    </div>
+  </section>
+
+  <!-- Shell de aplicación de demo por roles -->
+  <div id="app" class="app-shell" hidden>
+    <aside class="sidebar" aria-label="Navegación de demostración">
+      <div class="brand">
         <svg class="brand-mark" viewBox="0 0 40 40" role="img" aria-label="TrackIU"><path d="M8 9h24M20 9v22M12 20h16"/><circle cx="20" cy="20" r="16"/></svg>
         <span>Track<span>IU</span></span>
-      </a>
+      </div>
       <div class="context-card">
-        <span class="eyebrow">Vista de demostración</span>
-        <label for="role-switcher">Entrar como</label>
-        <select id="role-switcher" aria-describedby="role-help">
-          <option value="super_admin">Super admin</option>
-          <option value="manager">Manager · Ana</option>
+        <span class="eyebrow">Perfil de demostración</span>
+        <label for="profile-switcher">Entrar como</label>
+        <select id="profile-switcher" aria-describedby="profile-help">
           <option value="trainer">Coach · Diego</option>
           <option value="athlete">Atleta · Lucía</option>
+          <option value="manager">Manager · Ana</option>
+          <option value="super_admin">Super admin · Jose</option>
         </select>
-        <p id="role-help">La navegación y las acciones cambian con los permisos.</p>
+        <p id="profile-help">La navegación y las acciones cambian con los permisos simulados.</p>
       </div>
       <nav id="primary-nav"></nav>
       <div class="sidebar-footer">
-        <button id="theme-toggle" class="button ghost full" type="button">Cambiar tema</button>
         <button id="reset-demo" class="button ghost full" type="button">Reiniciar demo</button>
       </div>
     </aside>
 
     <div class="workspace">
       <header class="topbar">
-        <button id="menu-toggle" class="icon-button" type="button" aria-label="Abrir navegación">Menú</button>
         <div>
-          <p class="eyebrow" id="context-label">TrackIU MVP</p>
-          <h1 id="page-title">Inicio</h1>
+          <p class="eyebrow" id="context-label">Demo TrackIU</p>
+          <h2 id="page-title">Clase de hoy</h2>
         </div>
         <div class="topbar-actions">
-          <span id="role-badge" class="badge">Super admin</span>
-          <span id="save-state" class="save-state" aria-live="polite">Demo local</span>
+          <span id="profile-badge" class="badge">Coach</span>
+          <span id="save-state" class="save-state" aria-live="polite">Estado local</span>
         </div>
       </header>
 
@@ -57,19 +123,18 @@
     </div>
   </div>
 
-  <dialog id="modal">
-    <form method="dialog" class="modal-card">
-      <header class="modal-header">
-        <div>
-          <p class="eyebrow" id="modal-kicker">TrackIU</p>
-          <h2 id="modal-title">Detalle</h2>
-        </div>
-        <button class="icon-button" value="cancel" aria-label="Cerrar">Cerrar</button>
-      </header>
-      <div id="modal-content" class="modal-content"></div>
-    </form>
-  </dialog>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <footer class="site-footer">
+    <p class="muted small">
+      Esta es una demostración estática publicada en GitHub Pages. Utiliza únicamente datos ficticios y almacenamiento local
+      para conservar el estado de la prueba en este navegador.
+    </p>
+    <nav class="footer-nav" aria-label="Información legal">
+      <a href="./legal/aviso-legal.html">Aviso legal</a>
+      <a href="./legal/privacidad.html">Política de privacidad</a>
+      <a href="./legal/cookies.html">Política de cookies</a>
+      <a href="./legal/accesibilidad.html">Accesibilidad</a>
+      <a href="./legal/terminos-demo.html">Términos de la demostración</a>
+    </nav>
+  </footer>
 </body>
 </html>
