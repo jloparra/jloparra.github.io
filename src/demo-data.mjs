@@ -1,4 +1,4 @@
-export const RULES_VERSION = 'demo-rules-2.0.0';
+export const RULES_VERSION = 'demo-rules-2.1.0';
 
 export const zones = {
   chest: 'Pecho', shoulder: 'Hombro', wrist: 'Muñeca / mano', lumbar: 'Zona lumbar',
@@ -38,11 +38,17 @@ const rows = [
 export const catalog = rows.map(([id,name,pattern,zones,exposure,alternative]) => ({id,name,pattern,zones,exposure,alternative,active:true}));
 
 export function createDemoState() {
+  const now = new Date().toISOString();
   return {
-    schemaVersion: 2,
-    createdAt: new Date().toISOString(),
-    profile: 'visitor', currentGym: 'gym-a', currentAthlete: 'lucia',
-    gyms: [{id:'gym-a',name:'Avenidas Box',city:'Madrid'},{id:'gym-b',name:'North Performance',city:'Bilbao'}],
+    schemaVersion: 3,
+    createdAt: now,
+    profile: 'visitor',
+    currentGym: 'gym-a',
+    currentAthlete: 'lucia',
+    gyms: [
+      {id:'gym-a',name:'Avenidas Box',city:'Madrid'},
+      {id:'gym-b',name:'North Performance',city:'Bilbao'}
+    ],
     users: [
       {id:'jose',name:'Jose',role:'super_admin'},
       {id:'ana',name:'Ana Martín',role:'manager',gymId:'gym-a',active:true},
@@ -53,21 +59,74 @@ export function createDemoState() {
       {id:'nora',name:'Nora Pérez',role:'trainer',gymId:'gym-b',active:true},
       {id:'iker',name:'Iker Ruiz',role:'athlete',gymId:'gym-b',active:true}
     ],
-    permissions: {lucia:{'gym-a':true},marco:{'gym-a':true},sara:{'gym-a':false},iker:{'gym-b':true}},
-    restrictions: [
-      {id:'r1',athleteId:'lucia',zone:'knee',side:'right',level:6,label:'Molestia declarada al aterrizar',active:true},
-      {id:'r2',athleteId:'marco',zone:'shoulder',side:'left',level:4,label:'Molestia declarada en movimientos overhead',active:true}
-    ],
-    prechecks: {
-      lucia:{recovery:3,discomfort:'knee',persists:true,escalation:null,submittedAt:new Date().toISOString()},
-      marco:{recovery:4,discomfort:'shoulder',persists:true,escalation:null,submittedAt:new Date().toISOString()}
+    permissions: {
+      lucia:{'gym-a':true},
+      marco:{'gym-a':true},
+      sara:{'gym-a':false},
+      iker:{'gym-b':true}
     },
-    workout: {id:'workout-1',gymId:'gym-a',name:'Clase de hoy · Pierna y motor',status:'published',date:new Date().toISOString().slice(0,10),participants:['lucia','marco','sara'],items:[
-      {id:'item-1',exerciseId:'back-squat',dose:'5 × 5 · carga moderada'},
-      {id:'item-2',exerciseId:'box-jump',dose:'4 × 8'},
-      {id:'item-3',exerciseId:'strict-press',dose:'4 × 6'},
-      {id:'item-4',exerciseId:'row',dose:'10 min'}
-    ]},
-    proposals: {}, decisions: {}, feedback: {}, events: []
+    // Athlete-owned onboarding snapshot (simplified SPEC-002)
+    onboarding: {
+      lucia: {
+        submittedAt: now,
+        profile: {
+          goals: 'Mejorar fuerza de pierna y regularidad en clase',
+          training_experience: '2 años de CrossFit recreativo',
+          habits: {sleep_hours: 7, weekend_alcohol: 'moderate', tobacco: false},
+          dynamic_flags: ['works_full_time','commute'],
+          caution_notes: 'Prefiere evitar saltos altos en clases concurridas'
+        },
+        restrictions: [
+          {zone:'knee',side:'right',label:'Molestia declarada al aterrizar',since:'2026-06-01'}
+        ],
+        capacity: {
+          tests: {
+            air_squat_30s: {value: 25, unit: 'reps', recordedAt: '2026-07-01'},
+            push_up_30s: {value: 15, unit: 'reps', recordedAt: '2026-07-01'},
+            pull_up_30s: {value: null, unit: 'reps', recordedAt: null, unknown: true}
+          },
+          profile: {
+            level: 'intermediate',
+            confidence: 'partial',
+            missing: ['pull_up_30s'],
+            notes: 'Capacidad suficiente en pierna y empuje; tracción con datos parciales'
+          }
+        }
+      }
+    },
+    prechecks: {
+      lucia:{
+        recovery:3,
+        discomfort:'knee',
+        persists:true,
+        escalation:null,
+        submittedAt:now
+      },
+      marco:{
+        recovery:4,
+        discomfort:'shoulder',
+        persists:true,
+        escalation:null,
+        submittedAt:now
+      }
+    },
+    workout: {
+      id:'workout-1',
+      gymId:'gym-a',
+      name:'Clase de hoy · Pierna y motor',
+      status:'published',
+      date:now.slice(0,10),
+      participants:['lucia','marco','sara'],
+      items:[
+        {id:'item-1',exerciseId:'back-squat',dose:{sets:5,reps:5,loadLabel:'carga moderada'}},
+        {id:'item-2',exerciseId:'box-jump',dose:{sets:4,reps:8}},
+        {id:'item-3',exerciseId:'strict-press',dose:{sets:4,reps:6}},
+        {id:'item-4',exerciseId:'row',dose:{durationMinutes:10}}
+      ]
+    },
+    proposals: {},
+    decisions: {},
+    feedback: {},
+    events: []
   };
 }
