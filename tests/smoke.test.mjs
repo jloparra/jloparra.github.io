@@ -1,0 +1,2 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {readFile} from 'node:fs/promises';
+test('entry point and legal routes exist',async()=>{for(const path of ['index.html','legal/aviso-legal.html','legal/privacidad.html','legal/cookies.html','legal/accesibilidad.html','legal/terminos-demo.html']){const text=await readFile(new URL(`../${path}`,import.meta.url),'utf8');assert.ok(text.length>100)}});

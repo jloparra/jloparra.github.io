@@ -1,0 +1,13 @@
+{
+  "name": "trackiu-decision-loop-demo",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node scripts/validate.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "build": "node scripts/build.mjs",
+    "test:e2e": "node --test tests/smoke.test.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
