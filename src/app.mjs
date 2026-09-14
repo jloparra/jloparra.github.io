@@ -12,9 +12,11 @@ const ROLE_NAV = {
   ],
   athlete: [
     ['home','Tu entrenamiento de hoy'],
+    ['onboarding','Encuesta inicial'],
     ['pre','Pre-check-in'],
     ['session','Mi sesión'],
-    ['feedback','Feedback']
+    ['feedback','Feedback'],
+    ['permissions','Permiso de acceso']
   ],
   manager: [
     ['home','Resumen del gimnasio'],
@@ -52,7 +54,11 @@ function mountDemo(profile) {
 
 function renderChrome() {
   $('#profile-badge').textContent = PROFILE_LABEL[state.profile];
-  $('#context-label').textContent = state.profile === 'super_admin' ? 'Demo TrackIU' : state.currentGym === 'gym-a' ? 'Avenidas Box' : 'North Performance';
+  $('#context-label').textContent = state.profile === 'super_admin'
+    ? 'Demo TrackIU'
+    : state.currentGym === 'gym-a'
+    ? 'Avenidas Box'
+    : 'North Performance';
 }
 
 function renderNav() {
@@ -95,7 +101,7 @@ function renderView() {
               <p class="eyebrow">Cockpit</p>
               <h2>${workout.name}</h2>
             </div>
-            <span class="badge info">Reglas de demostración ${state.rulesVersion || 'demo-rules-2.0.0'}</span>
+            <span class="badge info">Reglas de demostración ${state.rulesVersion || 'demo-rules-2.1.0'}</span>
           </header>
           <div class="section-body">
             ${participants.map(a => renderTrainerProposal(workout,a)).join('')}
@@ -113,12 +119,16 @@ function renderView() {
   } else if (state.profile === 'athlete') {
     if (viewId === 'home') {
       container.innerHTML = renderAthleteHome();
+    } else if (viewId === 'onboarding') {
+      container.innerHTML = renderOnboarding();
     } else if (viewId === 'pre') {
       container.innerHTML = renderPrecheckForm();
     } else if (viewId === 'session') {
       container.innerHTML = renderAthleteSession();
     } else if (viewId === 'feedback') {
       container.innerHTML = renderFeedbackForm();
+    } else if (viewId === 'permissions') {
+      container.innerHTML = renderPermissions();
     }
   } else if (state.profile === 'manager') {
     container.innerHTML = renderManagerView();
@@ -131,17 +141,23 @@ function renderView() {
 
 function renderTrainerRow(athlete) {
   const permission = state.permissions[athlete.id]?.[state.currentGym];
-  const restrictions = state.restrictions.filter(r => r.athleteId === athlete.id && r.active);
   const proposal = generateProposal({
     workout: state.workout,
     athleteId: athlete.id,
     permission,
     restrictions: state.restrictions,
     precheck: state.prechecks[athlete.id],
-    latestFeedback: state.feedback[athlete.id]?.at(-1)
+    latestFeedback: state.feedback[athlete.id]?.at(-1),
+    capacityProfile: state.onboarding[athlete.id]?.capacity?.profile || null
   });
-  const decisions = state.decisions[proposal.id];
-  const statusLabel = proposal.signal === 'green' ? 'Sin novedades con la información disponible' : proposal.signal === 'gray' ? 'Faltan datos para valorar esta sesión' : proposal.signal === 'amber' ? 'Hay una propuesta que revisar' : 'Revisión necesaria antes de entrenar';
+  state.proposals[proposal.id] = proposal;
+  const statusLabel = proposal.signal === 'green'
+    ? 'Sin novedades con la información disponible'
+    : proposal.signal === 'gray'
+    ? 'Faltan datos para valorar esta sesión'
+    : proposal.signal === 'amber'
+    ? 'Hay una propuesta que revisar'
+    : 'Revisión necesaria antes de entrenar';
   return `
     <li class="status-row">
       <span class="status-dot ${proposal.signal}"></span>
@@ -156,16 +172,25 @@ function renderTrainerRow(athlete) {
 
 function renderTrainerProposal(workout, athlete) {
   const permission = state.permissions[athlete.id]?.[state.currentGym];
+  const capacityProfile = state.onboarding[athlete.id]?.capacity?.profile || null;
   const proposal = generateProposal({
     workout,
     athleteId: athlete.id,
     permission,
     restrictions: state.restrictions,
     precheck: state.prechecks[athlete.id],
-    latestFeedback: state.feedback[athlete.id]?.at(-1)
+    latestFeedback: state.feedback[athlete.id]?.at(-1),
+    capacityProfile
   });
+  state.proposals[proposal.id] = proposal;
   const decision = state.decisions[proposal.id];
-  const semaforoText = proposal.signal === 'green' ? 'Verde: sin novedades relevantes con la información disponible.' : proposal.signal === 'gray' ? 'Gris: faltan datos relevantes para valorar esta sesión.' : proposal.signal === 'amber' ? 'Ámbar: hay una propuesta o señal que revisar.' : 'Rojo: la automatización se detiene y requiere intervención.';
+  const semaforoText = proposal.signal === 'green'
+    ? 'Verde: sin novedades relevantes con la información disponible.'
+    : proposal.signal === 'gray'
+    ? 'Gris: faltan datos relevantes para valorar esta sesión.'
+    : proposal.signal === 'amber'
+    ? 'Ámbar: hay una propuesta o señal que revisar.'
+    : 'Rojo: la automatización se detiene y requiere intervención.';
   return `
     <article class="section-card">
       <header class="section-header">
@@ -184,11 +209,13 @@ function renderTrainerProposal(workout, athlete) {
         </ul>
         <div class="inline">
           <button type="button" class="button" data-action="decide" data-kind="accepted" data-proposal="${proposal.id}">Aceptar</button>
-          <button type="button" class="button secondary" data-action="decide" data-kind="modified" data-proposal="${proposal.id}">Modificar</button>
+          <button type="button" class="button secondary" data-action="open-edit" data-proposal="${proposal.id}">Modificar</button>
           <button type="button" class="button ghost" data-action="decide" data-kind="discarded" data-proposal="${proposal.id}">Descartar</button>
           <button type="button" class="button danger" data-action="decide" data-kind="escalated" data-proposal="${proposal.id}">Escalar</button>
         </div>
-        ${decision ? `<p class="muted">Decisión registrada: ${decision.action}.</p>` : '<p class="muted">La sesión aún está en estado pendiente para el atleta.</p>'}
+        ${decision
+          ? `<p class="muted">Decisión registrada: ${decision.action}.</p>`
+          : '<p class="muted">La sesión aún está en estado pendiente para el atleta.</p>'}
       </div>
     </article>
   `;
@@ -223,7 +250,11 @@ function renderTrainings() {
         <ul class="bullet-list">
           ${state.workout.items.map(item => {
             const exercise = state.catalog?.find(e => e.id === item.exerciseId) || null;
-            return `<li>${exercise ? exercise.name : 'Ejercicio'} · ${item.dose}</li>`;
+            const dose = item.dose;
+            const doseLabel = dose.durationMinutes
+              ? `${dose.durationMinutes} min`
+              : `${dose.sets} × ${dose.reps}${dose.loadLabel ? ' · ' + dose.loadLabel : ''}`;
+            return `<li>${exercise ? exercise.name : 'Ejercicio'} · ${doseLabel}</li>`;
           }).join('')}
         </ul>
       </div>
@@ -253,9 +284,61 @@ function renderAthleteHome() {
         <p>${message}</p>
         <p class="muted">Pre-check-in: ${pre ? 'completado' : 'pendiente'}.</p>
         <div class="inline">
+          <button type="button" class="button" data-action="goto" data-view="onboarding">Ver encuesta inicial</button>
           <button type="button" class="button" data-action="goto" data-view="pre">Completar pre-check-in</button>
           <button type="button" class="button secondary" data-action="goto" data-view="session">Ver sesión individual</button>
         </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderOnboarding() {
+  const snapshot = state.onboarding[state.currentAthlete];
+  if (!snapshot) {
+    return `
+      <section class="section-card">
+        <header class="section-header">
+          <div>
+            <p class="eyebrow">Encuesta inicial</p>
+            <h2>Perfil de atleta y contexto</h2>
+          </div>
+        </header>
+        <div class="section-body">
+          <p class="muted">En esta demo asumimos una encuesta inicial ficticia ya completada. En una aplicación real, aquí viviría la encuesta única de alta.</p>
+        </div>
+      </section>
+    `;
+  }
+  const profile = snapshot.profile;
+  const capacity = snapshot.capacity.profile;
+  return `
+    <section class="section-card">
+      <header class="section-header">
+        <div>
+          <p class="eyebrow">Encuesta inicial</p>
+          <h2>Perfiles derivados de Lucía</h2>
+        </div>
+      </header>
+      <div class="section-body stack">
+        <article>
+          <h3>Perfil de atleta</h3>
+          <p>${profile.training_experience}</p>
+          <p class="muted">Objetivo principal: ${profile.goals}</p>
+        </article>
+        <article>
+          <h3>Restricciones declaradas</h3>
+          <p class="muted">${snapshot.restrictions.map(r => r.label).join(' · ')}</p>
+        </article>
+        <article>
+          <h3>Perfil dinámico</h3>
+          <p class="muted">Sueño medio: ${profile.habits.sleep_hours} h · fin de semana: ${profile.habits.weekend_alcohol}</p>
+        </article>
+        <article>
+          <h3>Perfil de capacidad</h3>
+          <p>Nivel: ${capacity.level} · confianza: ${capacity.confidence}</p>
+          <p class="muted">Datos pendientes: ${capacity.missing.join(', ') || 'ninguno'}</p>
+        </article>
       </div>
     </section>
   `;
@@ -301,6 +384,23 @@ function renderPrecheckForm() {
             <option value="true" ${pre.persists ? 'selected' : ''}>Sí</option>
           </select>
         </div>
+        <fieldset class="form-field full">
+          <legend>¿Hay alguna señal que requiera revisión?</legend>
+          <div class="choice-row">
+            <span class="choice">
+              <input type="radio" id="esc-none" name="escalation" value="" ${!pre.escalation ? 'checked' : ''}>
+              <label for="esc-none">Sin señales especiales</label>
+            </span>
+            <span class="choice">
+              <input type="radio" id="esc-chest" name="escalation" value="chest_pain" ${pre.escalation==='chest_pain' ? 'checked' : ''}>
+              <label for="esc-chest">Dolor torácico declarado</label>
+            </span>
+            <span class="choice">
+              <input type="radio" id="esc-syncope" name="escalation" value="syncope" ${pre.escalation==='syncope' ? 'checked' : ''}>
+              <label for="esc-syncope">Síncope o pérdida de conocimiento</label>
+            </span>
+          </div>
+        </fieldset>
         <div class="form-field full">
           <button class="button" type="submit">Guardar check-in</button>
         </div>
@@ -328,7 +428,7 @@ function renderAthleteSession() {
             <div>
               <span class="eyebrow">Original</span>
               <h3>${item.original}</h3>
-              <p class="muted">${item.dose}</p>
+              <p class="muted">${formatDose(item.dose)}</p>
             </div>
             <div class="arrow">→</div>
             <div>
@@ -342,6 +442,12 @@ function renderAthleteSession() {
       </div>
     </section>
   `;
+}
+
+function formatDose(dose) {
+  if (!dose) return '';
+  if (dose.durationMinutes) return `${dose.durationMinutes} min`;
+  return `${dose.sets} × ${dose.reps}${dose.loadLabel ? ' · ' + dose.loadLabel : ''}`;
 }
 
 function renderFeedbackForm() {
@@ -374,6 +480,24 @@ function renderFeedbackForm() {
           <label for="fatigue">Fatiga (1–10)</label>
           <input id="fatigue" name="fatigue" type="number" min="1" max="10" required>
         </div>
+        <div class="form-field">
+          <label for="discomfort-zone">¿Hubo molestias?</label>
+          <select id="discomfort-zone" name="zone">
+            <option value="">Sin molestias</option>
+            ${Object.entries(state.zones || {}).map(([key,label]) => `
+              <option value="${key}">${label}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="discomfort-side">Lado</label>
+          <select id="discomfort-side" name="side">
+            <option value="">No aplica</option>
+            <option value="left">Izquierdo</option>
+            <option value="right">Derecho</option>
+            <option value="both">Ambos</option>
+          </select>
+        </div>
         <div class="form-field full">
           <label for="note">Nota opcional</label>
           <textarea id="note" name="note" placeholder="Describe solo lo necesario"></textarea>
@@ -382,6 +506,41 @@ function renderFeedbackForm() {
           <button class="button" type="submit">Enviar feedback</button>
         </div>
       </form>
+    </section>
+  `;
+}
+
+function renderPermissions() {
+  const gyms = state.gyms;
+  const permissions = state.permissions[state.currentAthlete] || {};
+  return `
+    <section class="section-card">
+      <header class="section-header">
+        <div>
+          <p class="eyebrow">Permiso de acceso</p>
+          <h2>Qué gimnasios pueden usar tu contexto</h2>
+        </div>
+      </header>
+      <div class="section-body">
+        <p class="muted">Solo tú decides qué gimnasios pueden ver tus restricciones y respuestas ficticias en esta demo.</p>
+        <ul class="status-list">
+          ${gyms.map(gym => {
+            const allowed = Boolean(permissions[gym.id]);
+            return `
+              <li class="status-row">
+                <div>
+                  <strong>${gym.name}</strong>
+                  <p>${allowed ? 'Este gimnasio tiene permiso de acceso.' : 'Este gimnasio no tiene permiso de acceso.'}</p>
+                </div>
+                <button type="button" class="button secondary" data-action="toggle-permission" data-gym="${gym.id}">
+                  ${allowed ? 'Dejar de compartir' : 'Conceder permiso'}
+                </button>
+              </li>
+            `;
+          }).join('')}
+        </ul>
+        <p class="muted small">Este gimnasio dejará de acceder a tus restricciones y respuestas cuando retires el permiso.</p>
+      </div>
     </section>
   `;
 }
@@ -439,7 +598,7 @@ function eventPrecheckSubmit(ev) {
     recovery: Number(form.get('recovery')),
     discomfort: form.get('zone') || null,
     persists: form.get('persistence') === 'true',
-    escalation: null,
+    escalation: form.get('escalation') || null,
     submittedAt: new Date().toISOString()
   };
   event(state,'precheck_completed',{athleteId: state.currentAthlete});
@@ -454,6 +613,8 @@ function eventFeedbackSubmit(ev) {
   const entry = {
     rpe: Number(form.get('rpe')),
     fatigue: Number(form.get('fatigue')),
+    zone: form.get('zone') || null,
+    side: form.get('side') || null,
     note: form.get('note') || '',
     submittedAt: new Date().toISOString()
   };
@@ -483,28 +644,40 @@ function handleGlobalClick(ev) {
     renderView();
     return;
   }
+  if (target.dataset.action === 'toggle-permission' && target.dataset.gym) {
+    const gymId = target.dataset.gym;
+    const current = state.permissions[state.currentAthlete] || {};
+    const allowed = Boolean(current[gymId]);
+    current[gymId] = !allowed;
+    state.permissions[state.currentAthlete] = current;
+    event(state,'permission_changed',{athleteId: state.currentAthlete,gymId,allowed:!allowed});
+    saveState(state);
+    renderView();
+    return;
+  }
   if (target.dataset.action === 'decide' && target.dataset.kind && target.dataset.proposal) {
     const proposalId = target.dataset.proposal;
     const proposal = state.proposals[proposalId] || null;
     if (!proposal) return;
     const actionMap = {
       accepted: 'coach_accepted',
-      modified: 'coach_modified',
       discarded: 'coach_discarded',
       escalated: 'coach_escalated'
     };
     const action = actionMap[target.dataset.kind];
+    if (!action) return;
     const decision = createDecision({
       proposal,
       action,
       actorId: 'diego',
       reason: 'Decisión registrada en la demo',
-      modifications: action === 'coach_modified' ? proposal.changes : []
+      modifications: []
     });
     state.decisions[proposal.id] = decision;
     event(state,'proposal_'+target.dataset.kind,{athleteId: proposal.athleteId});
     saveState(state);
     renderView();
+    return;
   }
 }
 
@@ -533,4 +706,3 @@ function bindChrome() {
 }
 
 bindChrome();
-
